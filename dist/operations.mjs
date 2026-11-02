@@ -1,4 +1,4 @@
-import {TYPES,PEOPLE,canReview,nextReviewers,live} from './domain.mjs';
+import {TYPES,PEOPLE,canReview,nextReviewers,live,active} from './domain.mjs';
 import {relations} from './explorer.mjs';
 
 export function nextAction(record,person,role){
@@ -39,7 +39,7 @@ export function focusedRelations(state,id,activeOnly=false){
 }
 export function programFamilies(state,id){
  return ['brand','base','goto','variant','release','mapping'].map(type=>{
-  const rows=state.records.filter(r=>r.type===type&&r.refs.program===id);
+  const rows=state.records.filter(r=>r.type===type&&(r.refs.program===id||active(r).refs.program===id));
   return {type,label:TYPES[type].plural,rows,active:rows.filter(live).length,pending:rows.filter(r=>r.status==='In review').length};
  });
 }
