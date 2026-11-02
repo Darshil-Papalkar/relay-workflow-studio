@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "test": "node --test workflow.test.mjs auth.test.mjs",
-    "check": "node --check dist/app.mjs && node --check dist/domain.mjs && node --check dist/auth.mjs && node --check dist/operations.mjs && node --check dist/explorer.mjs",
+    "check": "node --check dist/app.mjs && node --check dist/domain.mjs && node --check dist/auth.mjs && node --check dist/operations.mjs && node --check dist/explorer.mjs && node --check dist/navigation.mjs && node --check dist/picker.mjs",
     "start": "python3 -m http.server 4318 --bind 127.0.0.1 --directory dist"
   },
   "engines": { "node": ">=20" }
