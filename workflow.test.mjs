@@ -125,3 +125,43 @@ test('a rejected amendment can restart from its active version without losing re
  assert.ok(r.history.find(e=>e.action==='Rejected proposal archived').changes[0].before.name==='Rejected proposed name');
  assert.throws(()=>decide(s,'rel1','checker2','unknown','Invalid decision'),/valid review decision/);
 });
+
+// Large collections must stay searchable without dropping distant records.
+import {entityIndex,entityContext,filterRecords,pickerChoices,paginate,sortEntities,matchesEntity} from './dist/navigation.mjs';
+test('large entity collections search the entire result before paging',()=>{
+ const state=seed(),template=structuredClone(find(state,'brd1'));
+ for(let n=1;n<=1200;n++)state.records.push({...structuredClone(template),id:'large-'+n,code:'BRD-L'+n,name:'Collectionitem '+String(n).padStart(4,'0')});
+ const rows=filterRecords(state,{type:'brand',program:'prg1',query:'Collectionitem'});
+ assert.equal(rows.length,1200);assert.equal(paginate(rows).items.length,25);
+ const distant=filterRecords(state,{query:'BRD-L1200'});assert.equal(distant.length,1);assert.equal(distant[0].id,'large-1200');
+ assert.equal(filterRecords(state,{type:'brand',query:'Northstar Collectionitem'}).length,1200);
+ const last=paginate(rows,{page:999,pageSize:50});assert.equal(last.page,24);assert.equal(last.to,1200);
+ assert.deepEqual(paginate([]).items,[]);assert.equal(paginate([]).from,0);
+});
+test('duplicate names retain explicit unique IDs and deterministic order',()=>{
+ const state=seed(),r=structuredClone(find(state,'org1'));state.records.push({...r,id:'duplicate',code:'ORG-999'});
+ const rows=pickerChoices(state,{type:'org',query:r.name});assert.equal(rows.length,2);assert.notEqual(rows[0].id,rows[1].id);
+ assert.deepEqual(sortEntities(rows).map(r=>r.id),sortEntities([...rows].reverse()).map(r=>r.id));
+ assert.equal(pickerChoices(state,{type:'org',query:'ORG-999'})[0].id,'duplicate');
+});
+test('approved parent search follows published ancestry during amendments',()=>{
+ const state=seed(),program=find(state,'prg1'),original=program.name;amend(state,program.id,'maker');program.name='Proposed rename';program.refs.org='org2';
+ assert.equal(pickerChoices(state,{type:'program',org:'org2',approved:true}).some(r=>r.id==='prg1'),false);
+ assert.equal(pickerChoices(state,{type:'program',org:'org1',approved:true}).some(r=>r.id==='prg1'),true);
+ const brand=find(state,'brd1'),index=entityIndex(state);
+ assert.ok(entityContext(brand,index,{approved:true}).includes(original));
+ assert.equal(matchesEntity(brand,'Proposed rename',index,{approved:true}),false);
+ assert.equal(pickerChoices(state,{type:'brand',org:'org2',approved:true}).some(r=>r.id==='brd1'),false);
+});
+test('browse includes both active and proposed program membership without duplicates',()=>{
+ const state=seed(),brand=find(state,'brd1');amend(state,brand.id,'maker');brand.refs.program='prg2';
+ for(const program of ['prg1','prg2'])assert.equal(filterRecords(state,{program,type:'brand'}).filter(r=>r.id===brand.id).length,1);
+ assert.equal(pickerChoices(state,{type:'brand',program:'prg2'}).some(r=>r.id===brand.id),true);
+ assert.equal(pickerChoices(state,{type:'brand',program:'prg2',approved:true}).some(r=>r.id===brand.id),false);
+});
+test('organisation-scoped programs allow many programs and an empty organisation',()=>{
+ const state=seed();assert.equal(pickerChoices(state,{type:'program',org:'org1'}).length,2);
+ state.records.push({...structuredClone(find(state,'org1')),id:'empty-org',code:'ORG-EMPTY'});
+ assert.equal(pickerChoices(state,{type:'program',org:'empty-org'}).length,0);
+ assert.equal(pickerChoices(state,{type:'program',org:'missing'}).length,0);
+});
