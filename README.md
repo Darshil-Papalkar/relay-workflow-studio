@@ -121,3 +121,11 @@ Before operational use, enforce authentication, authorization, ownership, segreg
 Policy administration is included with Maker for this concept. A production implementation should define a dedicated administration permission. The sample directory has two checkers; larger reviewer groups, quorums, delegation, escalation, effective dates, retirement and migration rules remain design extensions.
 
 The interface uses original Relay artwork, system font fallbacks, an indigo and teal palette, keyboard focus states and responsive layouts. Approval of a release configuration represents approval of a record; it does not deploy an external system.
+
+## Working with large collections
+
+The program workspace starts with an organisation selector and a separate program selector. Both support search by name, ID and parent context. Organisations can have many programs; choosing another organisation clears an incompatible program selection. Creation forms use the same searchable selector for approved parents and preserve unfinished fields.
+
+Records, reviews, audit events, relationship directories and connection tables use bounded pages. Records can be scoped by organisation, program, type and status, then sorted. Search covers the full collection before pagination; exports include every matching record. Family cards and the visual map show short previews with access to the complete list. Opening a record preserves its list position and filters.
+
+This prototype filters and paginates browser-local data. A production implementation should move search, stable sorting, permissions and pagination to backend APIs; it is not a server scalability benchmark.
